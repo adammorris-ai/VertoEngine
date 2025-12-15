@@ -59,4 +59,5 @@ export interface GraphData {
   id: GraphId;
   nodes: Record<NodeId, NodeData>;
   connections: Connection[]; // Explicit edges
+  variables: Record<string, { type: DataType; value: any }>;
 }

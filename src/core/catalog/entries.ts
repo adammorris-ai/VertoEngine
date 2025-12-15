@@ -1,4 +1,5 @@
 import { ApiEntry } from './types';
+import { logicEntries } from './logic';
 
 export const mathEntries: ApiEntry[] = [
   {
@@ -39,4 +40,4 @@ export const debugEntries: ApiEntry[] = [
   }
 ];
 
-export const allEntries = [...mathEntries, ...debugEntries];
+export const allEntries = [...mathEntries, ...debugEntries, ...logicEntries];

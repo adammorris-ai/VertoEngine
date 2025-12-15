@@ -25,6 +25,16 @@ export class Engine {
     this.registry = registry;
     this.scheduler = new Scheduler();
     this.services = services;
+    // Initialize variables from graph if not provided in services
+    if (!this.services.variables) {
+        this.services.variables = {}; 
+        // Copy initial values
+        if (graph.variables) {
+            for(const [name, def] of Object.entries(graph.variables)) {
+                this.services.variables[name] = def.value;
+            }
+        }
+    }
   }
 
   tick(dt: number) {

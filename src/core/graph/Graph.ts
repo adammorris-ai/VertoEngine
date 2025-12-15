@@ -9,6 +9,7 @@ export class Graph {
       id: id || uuidv4(),
       nodes: {},
       connections: [],
+      variables: {}
     };
   }
 
