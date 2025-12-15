@@ -31,10 +31,6 @@ export const Tick: NodeDefinition = {
     ],
   }),
   execute: (ctx) => {
-    // DeltaSeconds should be set by the caller/event trigger, but if we are executing "Tick", 
-    // it implies we are passing control. 
-    // Usually Event nodes are "Entry Points", so execute() is called by the engine loop 
-    // and it triggers 'Out'.
     ctx.trigger('Out');
   }
 };
@@ -63,6 +59,34 @@ export const Branch: NodeDefinition = {
   }
 };
 
+export const FlipFlop: NodeDefinition = {
+  type: 'flow.flipflop',
+  category: 'Flow Control',
+  label: 'Flip Flop',
+  create: () => ({
+    inputs: [{ name: 'In', dataType: Exec }],
+    outputs: [
+      { name: 'A', dataType: Exec },
+      { name: 'B', dataType: Exec },
+      { name: 'IsA', dataType: Bool },
+    ],
+    data: { isA: true },
+  }),
+  execute: (ctx) => {
+    const isA = ctx.state.isA;
+    ctx.setOutput('IsA', isA);
+    
+    if (isA) {
+      ctx.trigger('A');
+    } else {
+      ctx.trigger('B');
+    }
+    
+    // Toggle for next time
+    ctx.state.isA = !isA;
+  }
+};
+
 export const Sequence: NodeDefinition = {
   type: 'flow.sequence',
   category: 'Flow Control',
@@ -75,7 +99,6 @@ export const Sequence: NodeDefinition = {
     ],
   }),
   execute: (ctx) => {
-    // TODO: Dynamic discovery of outputs if we allow variable number of pins
     ctx.trigger('Then 0');
     ctx.trigger('Then 1');
   }
@@ -94,31 +117,7 @@ export const DoOnce: NodeDefinition = {
     data: { isClosed: false },
   }),
   execute: (ctx) => {
-    // In DoOnce, we need to know WHICH input triggered this execution.
-    // The simplified ExecutionContext doesn't show "triggeredByPin".
-    // We might need to check how the runtime handles "multi-input exec nodes".
-    // For now, let's assume separate entry points or ctx.getTriggerPin()
-    // BUT, usually nodes are executed because an input was triggered.
-    // If we can't distinguish, we might need a different execute signature or 
-    // separate handlers for inputs. 
-    //
-    // However, typical Blueprint VM: "Reset" pin just resets state, doesn't execute "Completed".
-    // "In" pin checks state.
-    //
-    // For now, assuming standard flow where we can't easily distinguish without context info:
-    // We will assume `ctx.triggeredInput` exists or similar. 
-    // Since we don't have it, I'll defer complex state logic or assume standard 'In'
-    
-    // Simplification: DoOnce usually is:
-    // In -> if open { close; fire Completed }
-    // Reset -> open
-    //
-    // If I can't check input, this logic is flawed.
-    // I'll add `getTriggeredInputName` to ExecutionContext later.
-    // For now, assume 'In' is the main path.
-    
     if (ctx.state.isClosed) return;
-    
     ctx.state.isClosed = true;
     ctx.trigger('Completed');
   }
@@ -139,7 +138,6 @@ export const Gate: NodeDefinition = {
     data: { isOpen: true },
   }),
   execute: (ctx) => {
-     // Needs input distinction
      if (ctx.state.isOpen) {
        ctx.trigger('Exit');
      }
@@ -192,11 +190,6 @@ export const WhileLoop: NodeDefinition = {
     let iteration = 0;
     const MAX_ITERATIONS = 10000; // Cap
     
-    // Note: Condition input must be re-evaluated each time?
-    // In Blueprints, the "Condition" pin is evaluated every iteration.
-    // If it's connected to a variable, we read it again.
-    // ctx.getInput should re-evaluate pure nodes connected to it.
-    
     while (ctx.getInput('Condition')) {
       if (iteration++ > MAX_ITERATIONS) {
         console.warn("Infinite loop detected");
@@ -212,6 +205,7 @@ export function registerFlowNodes() {
   registry.register(BeginPlay);
   registry.register(Tick);
   registry.register(Branch);
+  registry.register(FlipFlop);
   registry.register(Sequence);
   registry.register(DoOnce);
   registry.register(Gate);
