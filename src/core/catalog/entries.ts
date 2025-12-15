@@ -29,7 +29,13 @@ export const debugEntries: ApiEntry[] = [
     inputs: [{name: 'String', type: 'String', default: 'Hello'}],
     outputs: [],
     pure: false,
-    handler: (args) => { console.log(args.String); }
+    handler: (args, ctx) => { 
+      if (ctx.services.logger) {
+        ctx.services.logger.log(args.String);
+      } else {
+        console.log(args.String); 
+      }
+    }
   }
 ];
 
